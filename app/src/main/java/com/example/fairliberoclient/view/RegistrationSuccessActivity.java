@@ -63,7 +63,7 @@ public class RegistrationSuccessActivity extends AppCompatActivity {
 
             // считывание данных из БД и запись их в коллекцию
             try {
-                fetchAllNotes();
+                fetchAllPlayers();
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
@@ -74,9 +74,10 @@ public class RegistrationSuccessActivity extends AppCompatActivity {
         }
     }
 
-    public void fetchAllNotes() throws ParseException {
+    // получаем список игроков команды
+    public void fetchAllPlayers() throws ParseException {
         // чтение БД и запись данных в курсор
-        Cursor cursor = database.getPlayers();
+        Cursor cursor = database.getTeamPlayers(teamId);
 
         if (cursor.getCount() == 0) { // если данные отсутствую, то вывод на экран об этом тоста
             Toast.makeText(this, "Игроков нет", Toast.LENGTH_SHORT).show();
