@@ -52,7 +52,7 @@ public class AddTeamActivity extends AppCompatActivity {
 
         // считывание данных из БД и запись их в коллекцию
         try {
-            fetchAllNotes();
+            fetchAllTournaments();
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
@@ -105,7 +105,7 @@ public class AddTeamActivity extends AppCompatActivity {
     }
 
     // метод считывания из БД всех записей
-    public void fetchAllNotes() throws ParseException {
+    public void fetchAllTournaments() throws ParseException {
         // чтение БД и запись данных в курсор
         Cursor cursor = database.getTournaments();
 
@@ -134,8 +134,27 @@ public class AddTeamActivity extends AppCompatActivity {
 
 
     public void checkRequired(){
-        boolean enabled = adapter.getSelectedPosition() >= 0 && !editTextaddTeam.getText().toString().isEmpty();
+        boolean enabled = adapter.getSelectedPosition() >= 0 && !editTextaddTeam.getText().toString().isEmpty() && checkTeamName(editTextaddTeam.getText().toString());
         save.setEnabled(enabled);
+    }
+
+    // Проверка на уникальность имени команды в турнире
+    private boolean checkTeamName(String teamName) {
+        if(teamName.isEmpty())
+            return false;
+        Cursor cursor = database.getTournamentTeams(tournamentId);
+        if (cursor.getCount() == 0) { // если данные отсутствуют, то все ок
+            return true;
+        } else { // иначе проверяем есть ли такая команда
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            while (cursor.moveToNext()) {
+                if(cursor.getString(1) == teamName) {
+                    Toast.makeText(this,"Команда с таким именем уже зарегистрирована на турнире!\nкажите другое имя команды!", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     }
