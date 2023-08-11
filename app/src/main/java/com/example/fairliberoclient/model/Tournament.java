@@ -133,4 +133,14 @@ public class Tournament {
 
     }
 
+    // Проверка на доступность регистрации
+    public boolean checkEnabledRegistration(){
+        return (new Date()).before(this.deadLine);
+    }
+
+    // Турнир еще не прошел
+    public boolean checkEnabledTournament(){
+        return (new Date()).before(this.beginDate);
+    }
+
 }
