@@ -178,11 +178,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // Получаем список игроков
-    public Cursor getPlayers() {
+    public Cursor getPlayers(int tournament_id) {
         String fields = columnPlayersId + "," + columnPlayersFamily + "," + columnPlayersName + "," + columnPlayersFatherName + "," + columnPlayersPhoto + ","
                 + columnPlayersRatingPlayer + "," + columnPlayersRole + "," + columnPlayersHight + "," + columnPlayersBirstYear;
-        // формирование запроса к БД
-        String query = "SELECT " + fields + " FROM " + tablePlayersName;
+        // формирование запроса к БД. Все игроки, кроме заявленных на этот же турнир за другие команды
+        String query = "SELECT " + fields + " FROM " + tablePlayersName + " WHERE " + columnPlayersId
+                + " NOT IN (SELECT " + columnPlayersToTeamsPlayerId + " FROM "+ tablePlayersToTeamsName +" WHERE "+ columnPlayersToTeamsTournamentId +" = "+tournament_id+");";
 
         // метод getReadableDatabase() получает БД для чтения
         SQLiteDatabase database = this.getReadableDatabase();
@@ -197,6 +198,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // возврат курсора
         return cursor;
     }
+
 
     // Получаем список игроков (для записи демо данных)
     public Cursor getPlayers(SQLiteDatabase db) {
@@ -331,6 +333,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return cursor;
     }
 
+    // Получает список команд турнира
+    public Cursor getTournamentTeams(int tournament_id) {
+        String query = "SELECT t." + columnTeamsId+", t." + columnTeamsName
+        + " FROM " + tableTeamsName + " t INNER JOIN " + tablePlayersToTeamsName + " pt ON (pt."+columnPlayersToTeamsTeamsId + " = t." +columnTeamsId + ")"
+        + " WHERE pt."+ columnPlayersToTeamsTournamentId + " = " + tournament_id;
+
+        // метод getReadableDatabase() получает БД для чтения
+        SQLiteDatabase database = this.getReadableDatabase();
+
+        // создаём нулевой курсор
+        Cursor cursor = null;
+
+        if (database != null) { // если БД существует, то инициализируем курсор
+            cursor = database.rawQuery(query, null);
+        }
+
+        // возврат курсора
+        return cursor;
+    }
 
 }
 
