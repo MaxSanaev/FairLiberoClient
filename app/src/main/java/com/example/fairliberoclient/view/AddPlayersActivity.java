@@ -6,13 +6,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,7 +24,6 @@ import com.example.fairliberoclient.viewmodel.DatabaseHelper;
 
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,25 +46,18 @@ public class AddPlayersActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_players);
+        currentRating = 0;
         database = new DatabaseHelper(this); // выделение памяти и задание текущего контекста работы с БД
+        teamName = findViewById(R.id.teamName);
+        tournamentLevel = findViewById(R.id.tournamentLevel);
+        plus = findViewById(R.id.plus);
+        infoForCount1 = findViewById(R.id.infoForCount1);
+        infoForCount2 = findViewById(R.id.infoForCount2);
+        confirm = findViewById(R.id.confirm);
 
         playerList = new ArrayList<>();
         selectedPlayers = new ArrayList<>();
-        // считывание данных из БД и запись их в коллекцию
-        try {
-            fetchAllNotes();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-
-        currentRating = 0;
-        teamName = findViewById(R.id.teamName);
-        tournamentLevel = findViewById(R.id.tournamentLevel);
-        infoForCount1 = findViewById(R.id.infoForCount1);
-        infoForCount2 = findViewById(R.id.infoForCount2);
-
         Intent intent = getIntent();
-        teamName.setText(intent.getStringExtra("teamName"));
         int tournamentId = intent.getIntExtra("tournamentId", -1);
         if (tournamentId >= 0) {
             try {
@@ -78,56 +68,64 @@ public class AddPlayersActivity extends AppCompatActivity {
             tournamentLevel.setText(tournament.getLevelName());
             infoForCount1.setText(this.getCurrentRatingString(6));
             infoForCount2.setText(this.getCurrentRatingString(7));
-        }
 
-        plus = findViewById(R.id.plus);
-        plus.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast toast = Toast.makeText(getApplicationContext(), "Функционал находится в стадии разработки!\nПопробуйте в следующих версиях!", Toast.LENGTH_SHORT);
-                toast.show();
+
+            // считывание данных из БД и запись их в коллекцию
+            try {
+                fetchAllPlayers();
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+
+
+            teamName.setText(intent.getStringExtra("teamName"));
+            plus.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Toast toast = Toast.makeText(getApplicationContext(), "Функционал находится в стадии разработки!\nПопробуйте в следующих версиях!", Toast.LENGTH_SHORT);
+                    toast.show();
 //                Intent intentMy = new Intent(AddPlayersActivity.this, AddPlayerActivity.class);
 //                intentMy.putExtra("100", 1);
 //                AddPlayersActivity.this.startActivity(intentMy);
-            }
-        });
+                }
+            });
 
-        confirm = findViewById(R.id.confirm);
-        confirm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (checkSaveConditions()) {
-                    int teamId = database.addTeam(selectedPlayers, tournament, teamName.getText().toString());
-                    if (teamId > 0) {
-                        Intent intentMy = new Intent(AddPlayersActivity.this, RegistrationSuccessActivity.class);
-                        intentMy.putExtra("team_id", teamId);
-                        intentMy.putExtra("team_name", teamName.getText().toString());
-                        intentMy.putExtra("tournament_id", tournament.getId());
-                        AddPlayersActivity.this.startActivity(intentMy);
+            confirm.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (checkSaveConditions()) {
+                        int teamId = database.addTeam(selectedPlayers, tournament, teamName.getText().toString());
+                        if (teamId > 0) {
+                            Intent intentMy = new Intent(AddPlayersActivity.this, RegistrationSuccessActivity.class);
+                            intentMy.putExtra("team_id", teamId);
+                            intentMy.putExtra("team_name", teamName.getText().toString());
+                            intentMy.putExtra("tournament_id", tournament.getId());
+                            AddPlayersActivity.this.startActivity(intentMy);
+                        } else {
+                            Toast toast = Toast.makeText(getApplicationContext(), "Ошибка при регистрации команды!\nКоманда не зарегистрирована!", Toast.LENGTH_SHORT);
+                            toast.show();
+                        }
                     } else {
-                        Toast toast = Toast.makeText(getApplicationContext(), "Ошибка при регистрации команды!\nКоманда не зарегистрирована!", Toast.LENGTH_SHORT);
+                        Toast toast = Toast.makeText(getApplicationContext(), "Выберите правильное количество игроков!\nКоманда не зарегистрирована!", Toast.LENGTH_SHORT);
                         toast.show();
                     }
-                } else {
-                    Toast toast = Toast.makeText(getApplicationContext(), "Выберите правильное количество игроков!\nКоманда не зарегистрирована!", Toast.LENGTH_SHORT);
-                    toast.show();
                 }
-            }
-        });
+            });
 
-        recyclerView = findViewById(R.id.recyclerViewPlayers);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this)); // задание структуры вывода данных в recyclerView
-        adapter = new PlayerAdapter(this, playerList, tournament); // инициализация адаптера и передача в рего данных из БД
-        recyclerView.setAdapter(adapter); // передача в recyclerView адаптер
-        recyclerView.setRecyclerListener(new RecyclerView.RecyclerListener() {
-            @Override
-            public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
-                selectedPlayers = adapter.getSelectedPlayers();
-                getCurrentRating();
-                infoForCount1.setText(getCurrentRatingString(6));
-                infoForCount2.setText(getCurrentRatingString(7));
-            }
-        });
+            recyclerView = findViewById(R.id.recyclerViewPlayers);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this)); // задание структуры вывода данных в recyclerView
+            adapter = new PlayerAdapter(this, playerList, tournament); // инициализация адаптера и передача в рего данных из БД
+            recyclerView.setAdapter(adapter); // передача в recyclerView адаптер
+            recyclerView.setRecyclerListener(new RecyclerView.RecyclerListener() {
+                @Override
+                public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+                    selectedPlayers = adapter.getSelectedPlayers();
+                    getCurrentRating();
+                    infoForCount1.setText(getCurrentRatingString(6));
+                    infoForCount2.setText(getCurrentRatingString(7));
+                }
+            });
+        }
     }
 
 
@@ -161,9 +159,9 @@ public class AddPlayersActivity extends AppCompatActivity {
 
     }
 
-    public void fetchAllNotes() throws ParseException {
+    public void fetchAllPlayers() throws ParseException {
         // чтение БД и запись данных в курсор
-        Cursor cursor = database.getPlayers();
+        Cursor cursor = database.getPlayers(tournament.getId());
 
         if (cursor.getCount() == 0) { // если данные отсутствую, то вывод на экран об этом тоста
             Toast.makeText(this, "Игроков нет", Toast.LENGTH_SHORT).show();
