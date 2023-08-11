@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,22 +15,32 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.fairliberoclient.R;
 import com.example.fairliberoclient.model.Tournament;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 public class TournamentAdapter extends RecyclerView.Adapter<TournamentAdapter.ViewHolder> {
     private Context context;
 
-    private List<Tournament> tournament;
+    private List<Tournament> tournaments;
 
     private int selectedPosition;
 
     private int selectedId;
 
-    public TournamentAdapter(Context context, List<Tournament> tournament) {
+    // Турниры, регистрация на которые запрещена
+    private List<Tournament> disabledTournaments;
+
+    public TournamentAdapter(Context context, List<Tournament> tournaments) {
         this.context = context;
-        this.tournament = tournament;
+        this.tournaments = tournaments;
         selectedPosition = selectedId = -1;
+        disabledTournaments = new ArrayList<>();
+        for(Tournament t : tournaments) {
+            if(!t.checkEnabledRegistration()) {
+                disabledTournaments.add(t);
+            }
+        }
     }
 
     public int getSelectedId() {
@@ -45,21 +56,31 @@ public class TournamentAdapter extends RecyclerView.Adapter<TournamentAdapter.Vi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, @SuppressLint("RecyclerView") int position) {
-        if (selectedPosition == position) {
-            holder.itemView.setBackgroundColor(Color.parseColor("#40FFFFFF"));
+        if((tournaments.get(position)).checkEnabledRegistration()) {
+
+            if (selectedPosition == position) {
+                // Выбранный турнир
+                holder.itemView.setBackgroundColor(Color.parseColor("#40FFFFFF"));
+            } else {
+                holder.itemView.setBackgroundColor(Color.parseColor("#F5000000"));
+            }
         } else {
-            holder.itemView.setBackgroundColor(Color.parseColor("#F5000000"));
+            // Отмечаем запрещенные к регистрации турниры
+            holder.itemView.setBackgroundColor(Color.parseColor("#80FF0000"));
         }
-        holder.tournamentInfo.setText((tournament.get(position)).getTournamentInfo());
-        holder.tournamentId.setText((tournament.get(position)).getId() + "");
-
-
+        holder.tournamentInfo.setText((tournaments.get(position)).getTournamentInfo());
+        holder.tournamentId.setText((tournaments.get(position)).getId() + "");
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(disabledTournaments.contains(tournaments.get(position))) {
+                    Toast.makeText(context,"Турнир недоступен для регистрацции!",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 if (selectedPosition == -1) {
                     selectedPosition = position;
-                    selectedId = (tournament.get(position)).getId();
+                    selectedId = (tournaments.get(position)).getId();
                 } else {
                     selectedPosition = selectedId = -1;
                 }
@@ -81,7 +102,7 @@ public class TournamentAdapter extends RecyclerView.Adapter<TournamentAdapter.Vi
 
     @Override
     public int getItemCount() {
-        return tournament.size();
+        return tournaments.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
